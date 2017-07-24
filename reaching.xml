@@ -1,0 +1,232 @@
+<mujoco model='humanoid'>
+    <compiler inertiafromgeom='true' angle='degree'/>
+
+    <default>
+        <joint limited='true' damping='1' armature='0'/>
+        <geom contype='1' conaffinity='1' condim='1' rgba='0.8 0.6 .4 1'
+        	margin="0.001" solref=".02 1" solimp=".8 .8 .01" material="geom"/>
+        <motor ctrlrange='-.4 .4' ctrllimited='true'/>
+    </default>
+
+    <option gravity='0 0 0' collision='predefined' timestep='0.002' iterations="50" tolerance="1e-10" solver="Newton" jacobian="dense" cone="elliptic"/>
+
+    <size nstack="1000000"/>
+
+    <visual>
+        <map fogstart="3" fogend="5" force="0.1" znear="0.5"/>
+        <quality shadowsize="2048" offsamples="8"/>
+        <global offwidth="800" offheight="800"/>
+    </visual>
+
+    <asset>
+        <texture type="skybox" builtin="gradient" width="128" height="128" rgb1=".4 .6 .8"
+            rgb2="0 0 0"/>
+        <texture name="texgeom" type="cube" builtin="flat" mark="cross" width="127" height="1278"
+            rgb1="0.8 0.6 0.4" rgb2="0.8 0.6 0.4" markrgb="1 1 1" random="0.01"/>
+        <texture name="texplane" type="2d" builtin="checker" rgb1=".2 .3 .4" rgb2=".1 0.15 0.2"
+            width="512" height="512"/>
+
+        <material name='MatPlane' reflectance='0.3' texture="texplane" texrepeat="1 1" texuniform="true"/>
+        <material name='geom' texture="texgeom" texuniform="true"/>
+    </asset>
+
+    <worldbody>
+        <geom name='floor' pos='0 0 .1' size='5 5 .125' type='plane' material="MatPlane" condim='3'/>
+
+        <light mode='targetbodycom' target='table' directional='false' diffuse='.8 .8 .8' specular='0.3 0.3 0.3' pos='0 0 4.0' dir='0 0 -1'/>
+
+		<camera name='targeting' pos='2.5 0 2.5' xyaxes='0 1 0 -.5 0 1' mode='fixed'/>
+
+		<body pos='-.01 0 1.140' name="root">
+
+			<body name='right_foot' pos='0 .1 -1'>
+				<geom name='right_foot_cap1' type='capsule' fromto='-.07 -0.02 0 0.14 -0.04 0'  size='0.027' />
+				<geom name='right_foot_cap2' type='capsule' fromto='-.07 0 0 0.14  0.02 0'  size='0.027' />
+
+				<body name='right_shin' pos='0 -0.01 0.403' >
+					<geom name='right_shin1' type='capsule' fromto='0 0 -.3 0 0 0'   size='0.049' />
+
+					<body name='right_thigh' pos='0 0 0.385' >
+                        <geom name='right_thigh1' type='capsule' fromto='0 0.01 -.340 0 0 0'  size='0.06' />
+
+						<body name='pelvis' pos='0 -.1 0.06' quat='1.000 0 -0.002 0' >
+							<geom name='butt' type='capsule' fromto='-.02 .07 0 -.02 -.07 0'  size='0.09' />
+
+							<joint name='abdomen_z' type='hinge' pos='0 0 0.160' axis='0 0 1' range='-45 45' damping='5' stiffness='20' armature='0.02' />
+							<body name='lwaist' pos='.01 0 0.160' quat='1.000 0 -0.002 0' >
+								<joint name='abdomen_y' type='hinge' pos='0 0 0' axis='0 1 0' range='-75 70' damping='5' stiffness='10' armature='0.02' />
+								<geom name='lwaist' type='capsule' fromto='0 .06 0 0 -.06 0'  size='0.06' />
+
+								<body name='torso' pos='0 0 .260'>
+									<geom name='torso1' type='capsule' fromto='0 -.07 0 0 .07 0'  size='0.07'/>
+									<geom name='head' type='sphere' pos='0 0 .19' size='.09'/> <!---head in openni--->
+									<geom name='uwaist' type='capsule' fromto='-.01 -.06 -.12 -.01 .06 -.12' size='0.06'/>
+
+									<body name='right_upper_arm' pos='0 -0.17 0.06' >  <!---r shoulder in openni--->
+										<joint name='right_shoulder1' type='hinge' pos='0 0 0' axis='0 1 0'  range='-85 60' stiffness='1' armature='0.0068' />
+										<joint name='right_shoulder2' type='hinge' pos='0 0 0' axis='1 0 0' range='-85 60' stiffness='1'  armature='0.0051' />
+										<geom name='right_uarm1' type='capsule' fromto='0 0 0 .16 -.16 -.16'  size='0.04 0.16' />
+										<body name='right_lower_arm' pos='.18 -.18 -.18' >  <!---r elbow in openni--->
+											<joint name='right_elbow' type='hinge' pos='0 0 0' axis='0 -1 1' range='-90 50'  stiffness='0' armature='0.0028' />
+											<geom name='right_larm' type='capsule' fromto='0.01 0.01 0.01 .17 .17 .17'  size='0.031' />
+											<body name="right_hand" pos='.18 .18 .18'><!---r hand in openni--->
+												<geom name='right_h' type='sphere' size='0.04'/>
+											</body>
+										</body>
+									</body>
+									<body name='left_upper_arm' pos='0 0.17 0.06' ><!---l shoulder in openni--->
+										<joint name='left_shoulder1' type='hinge' pos='0 0 0' axis='0 -1 0' range='-60 85' stiffness='1' armature='0.0068' />
+										<joint name='left_shoulder2' type='hinge' pos='0 0 0' axis='0 0 -1' range='-60 85'  stiffness='1' armature='0.0051' />
+										<geom name='left_uarm1' type='capsule' fromto='0 0 0 .16 .16 -.16'  size='0.04 0.16' />
+										<body name='left_lower_arm' pos='.18 .18 -.18' ><!---l elbow in openni--->
+											<joint name='left_elbow' type='hinge' pos='0 0 0' axis='0 -1 -1' range='-90 50' stiffness='0' armature='0.0028' />
+											<geom name='left_larm' type='capsule' fromto='0.01 -0.01 0.01 .17 -.17 .17'  size='0.031' />
+											<body name="left_hand" pos=".18 -.18 .18"><!---l hand in openni--->
+												<geom name='left_h' type='sphere'  size='0.04'/>
+											</body>
+										</body>
+									</body>
+
+								</body>
+
+							</body>
+						</body>
+
+						<body name='left_thigh' pos='0 -.2 0' >
+							<geom name='left_thigh1' type='capsule' fromto='0 0 0 0 -0.01 -.34'  size='0.06' />
+							<body name='left_shin' pos='0 -0.01 -0.403' >
+								<geom name='left_shin1' type='capsule' fromto='0 0 0 0 0 -.3'   size='0.049' />
+								<body name='left_foot' pos='0 0 -.39' >
+									<geom name='left_foot_cap1' type='capsule' fromto='-.07 0.02 0 0.14 0.04 0'  size='0.027' />
+									<geom name='left_foot_cap2' type='capsule' fromto='-.07 0 0 0.14  -0.02 0'  size='0.027' />
+								</body>
+							</body>
+S						</body>
+					</body>
+				</body>
+
+			</body>
+
+		</body>
+
+		<!---Table plus objects --->
+		<body name="table" pos=".8 0 1">
+			<geom name="table_top" type="box" size=".6 .8 .05"/>
+
+			<!---First column of objects--->
+			<body name="target1-1" pos="-.5 -.5 .08">
+				<geom type="box" size=".02 .02 .02" rgba="1 1 1 1"/>
+				<joint name="targetx1-1" ref="-.4" type="slide" pos="0 0 0" axis="1 0 0" range="-.5 .5"/><!---Use to put in generalized world positions--->
+				<joint name="targety1-1" ref="-.5" type="slide" pos="0 0 0" axis="0 1 0" range="-.6 .6"/>
+			</body>
+
+			<body name="target1-2" pos="-.35 -.5 .08">
+				<geom type="box" size=".02 .02 .02" rgba="1 1 1 1"/>
+				<joint name="targetx1-2" ref="-.35" type="slide" pos="0 0 0" axis="1 0 0" range="-.5 .5"/><!---Use to put in generalized world positions--->
+				<joint name="targety1-2" ref="-.5" type="slide" pos="0 0 0" axis="0 1 0" range="-.6 .6"/>
+			</body>
+
+			<body name="target1-3" pos="-.2 -.5 .08">
+				<geom type="box" size=".02 .02 .02" rgba="1 1 1 1"/>
+				<joint name="targetx1-3" ref="-.2" type="slide" pos="0 0 0" axis="1 0 0" range="-.5 .5"/><!---Use to put in generalized world positions--->
+				<joint name="targety1-3" ref="-.5" type="slide" pos="0 0 0" axis="0 1 0" range="-.6 .6"/>
+			</body>
+
+			<body name="target1-4" pos="-.05 -.5 .08">
+				<geom type="box" size=".02 .02 .02" rgba="1 1 1 1"/>
+				<joint name="targetx1-4" ref="-.05" type="slide" pos="0 0 0" axis="1 0 0" range="-.5 .5"/><!---Use to put in generalized world positions--->
+				<joint name="targety1-4" ref="-.5" type="slide" pos="0 0 0" axis="0 1 0" range="-.6 .6"/>
+			</body>
+
+
+			<!---second column of objects--->
+			<body name="target2-1" pos="-.5 -.17 .08">
+				<geom type="box" size=".02 .02 .02" rgba="0 1 1 1"/>
+				<joint name="targetx2-1" ref="-.4" type="slide" pos="0 0 0" axis="1 0 0" range="-.5 .5"/><!---Use to put in generalized world positions--->
+				<joint name="targety2-1" ref="-.17" type="slide" pos="0 0 0" axis="0 1 0" range="-.6 .6"/>
+			</body>
+
+			<body name="target2-2" pos="-.35 -.17 .08">
+				<geom type="box" size=".02 .02 .02" rgba="0 1 1 1"/>
+				<joint name="targetx2-2" ref="-.35" type="slide" pos="0 0 0" axis="1 0 0" range="-.5 .5"/><!---Use to put in generalized world positions--->
+				<joint name="targety2-2" ref="-.17" type="slide" pos="0 0 0" axis="0 1 0" range="-.6 .6"/>
+			</body>
+
+			<body name="target2-3" pos="-.2 -.17 .08">
+				<geom type="box" size=".02 .02 .02" rgba="0 1 1 1"/>
+				<joint name="targetx2-3" ref="-.2" type="slide" pos="0 0 0" axis="1 0 0" range="-.5 .5"/><!---Use to put in generalized world positions--->
+				<joint name="targety2-3" ref="-.17" type="slide" pos="0 0 0" axis="0 1 0" range="-.6 .6"/>
+			</body>
+
+			<body name="target2-4" pos="-.05 -.17 .08">
+				<geom type="box" size=".02 .02 .02" rgba="0 1 1 1"/>
+				<joint name="targetx2-4" ref="-.05" type="slide" pos="0 0 0" axis="1 0 0" range="-.5 .5"/><!---Use to put in generalized world positions--->
+				<joint name="targety2-4" ref="-.17" type="slide" pos="0 0 0" axis="0 1 0" range="-.6 .6"/>
+			</body>
+
+
+			<!---third column of objects--->
+			<body name="target3-1" pos="-.5 .17 .08">
+				<geom type="box" size=".02 .02 .02" rgba="1 0 1 1"/>
+				<joint name="targetx3-1" ref="-.4" type="slide" pos="0 0 0" axis="1 0 0" range="-.5 .5"/><!---Use to put in generalized world positions--->
+				<joint name="targety3-1" ref=".17" type="slide" pos="0 0 0" axis="0 1 0" range="-.6 .6"/>
+			</body>
+
+			<body name="target3-2" pos="-.35 .17 .08">
+				<geom type="box" size=".02 .02 .02" rgba="1 0 1 1"/>
+				<joint name="targetx3-2" ref="-.35" type="slide" pos="0 0 0" axis="1 0 0" range="-.5 .5"/><!---Use to put in generalized world positions--->
+				<joint name="targety3-2" ref=".17" type="slide" pos="0 0 0" axis="0 1 0" range="-.6 .6"/>
+			</body>
+
+			<body name="target3-3" pos="-.2 .17 .08">
+				<geom type="box" size=".02 .02 .02" rgba="1 0 1 1"/>
+				<joint name="targetx3-3" ref="-.2" type="slide" pos="0 0 0" axis="1 0 0" range="-.5 .5"/><!---Use to put in generalized world positions--->
+				<joint name="targety3-3" ref=".17" type="slide" pos="0 0 0" axis="0 1 0" range="-.6 .6"/>
+			</body>
+
+			<body name="target3-4" pos="-.05 .17 .08">
+				<geom type="box" size=".02 .02 .02" rgba="1 0 1 1"/>
+				<joint name="targetx3-4" ref="-.05" type="slide" pos="0 0 0" axis="1 0 0" range="-.5 .5"/><!---Use to put in generalized world positions--->
+				<joint name="targety3-4" ref=".17" type="slide" pos="0 0 0" axis="0 1 0" range="-.6 .6"/>
+			</body>
+
+			<!---First column of objects--->
+			<body name="target4-1" pos="-.5 .5 .08">
+				<geom type="box" size=".02 .02 .02" rgba="1 1 0 1"/>
+				<joint name="targetx4-1" ref="-.4" type="slide" pos="0 0 0" axis="1 0 0" range="-.5 .5"/><!---Use to put in generalized world positions--->
+				<joint name="targety4-1" ref=".5" type="slide" pos="0 0 0" axis="0 1 0" range="-.6 .6"/>
+			</body>
+
+			<body name="target4-2" pos="-.35 .5 .08">
+				<geom type="box" size=".02 .02 .02" rgba="1 1 0 1"/>
+				<joint name="targetx4-2" ref="-.35" type="slide" pos="0 0 0" axis="1 0 0" range="-.5 .5"/><!---Use to put in generalized world positions--->
+				<joint name="targety4-2" ref=".5" type="slide" pos="0 0 0" axis="0 1 0" range="-.6 .6"/>
+			</body>
+
+			<body name="target4-3" pos="-.2 .5 .08">
+				<geom type="box" size=".02 .02 .02" rgba="1 1 0 1"/>
+				<joint name="targetx4-3" ref="-.2" type="slide" pos="0 0 0" axis="1 0 0" range="-.5 .5"/><!---Use to put in generalized world positions--->
+				<joint name="targety4-3" ref=".5" type="slide" pos="0 0 0" axis="0 1 0" range="-.6 .6"/>
+			</body>
+
+			<body name="target4-4" pos="-.05 .5 .08">
+				<geom type="box" size=".02 .02 .02" rgba="1 1 0 1"/>
+				<joint name="targetx4-4" ref="-.05" type="slide" pos="0 0 0" axis="1 0 0" range="-.5 .5"/><!---Use to put in generalized world positions--->
+				<joint name="targety4-4" ref=".5" type="slide" pos="0 0 0" axis="0 1 0" range="-.6 .6"/>
+			</body>
+
+		</body>
+    </worldbody>
+
+    <actuator>
+        <motor name='abdomen_y'       gear='200' joint='abdomen_y' />
+        <motor name='abdomen_z'       gear='200' joint='abdomen_z' />
+        <motor name='right_shoulder1' gear='100' joint='right_shoulder1' />
+        <motor name='right_shoulder2' gear='100' joint='right_shoulder2' />
+        <motor name='right_elbow'     gear='200' joint='right_elbow' />
+        <motor name='left_shoulder1'  gear='100' joint='left_shoulder1' />
+        <motor name='left_shoulder2'  gear='100' joint='left_shoulder2' />
+        <motor name='left_elbow'      gear='200' joint='left_elbow' />
+    </actuator>
+
+</mujoco>
