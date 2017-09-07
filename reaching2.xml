@@ -52,7 +52,7 @@
 						<body name='pelvis' pos='0 -.1 0.06' quat='1.000 0 -0.002 0' >
 							<geom name='butt' type='capsule' fromto='-.02 .07 0 -.02 -.07 0'  size='0.09' />
 
-							<!---<joint name='abdomen_z' type='hinge' pos='0 0 0.160' axis='0 0 1' range='-45 45' damping='5' stiffness='20' armature='0.02' />--->
+							<joint name='abdomen_z' type='hinge' pos='0 0 0.160' axis='0 0 1' range='-45 45' damping='5' stiffness='20' armature='0.02' />
 							<body name='lwaist' pos='.01 0 0.160' quat='1.000 0 -0.002 0' >
 								<joint name='abdomen_y' type='hinge' pos='0 0 0' axis='0 1 0' range='-75 70' damping='5' stiffness='10' armature='0.02' />
 								<geom name='lwaist' type='capsule' fromto='0 .06 0 0 -.06 0'  size='0.06' />
@@ -117,42 +117,59 @@ S						</body>
 			<!---First column of objects--->
 			<body name="target1-1" pos="-.5 -.5 .08">
 				<geom type="box" size=".02 .02 .02" rgba="1 1 1 1"/>
+				<joint name="targetx1-1" ref="-.4" type="slide" pos="0 0 0" axis="1 0 0" range="-.5 .5"/><!---Use to put in generalized world positions--->
+				<joint name="targety1-1" ref="-.5" type="slide" pos="0 0 0" axis="0 1 0" range="-.6 .6"/>
 				<site type='box' size='.02 .02 .02'name='target1-1' pos='0 0 0'/>
 			</body>
 
 			<body name="target1-2" pos="-.35 -.5 .08">
 				<geom type="box" size=".02 .02 .02" rgba="1 1 1 1"/>
+				<joint name="targetx1-2" ref="-.35" type="slide" pos="0 0 0" axis="1 0 0" range="-.5 .5"/><!---Use to put in generalized world positions--->
+				<joint name="targety1-2" ref="-.5" type="slide" pos="0 0 0" axis="0 1 0" range="-.6 .6"/>
 				<site type='box' size='.02 .02 .02'name='target1-2' pos='0 0 0'/>
 			</body>
 
 			<body name="target1-3" pos="-.2 -.5 .08">
 				<geom type="box" size=".02 .02 .02" rgba="1 1 1 1"/>
+				<joint name="targetx1-3" ref="-.2" type="slide" pos="0 0 0" axis="1 0 0" range="-.5 .5"/><!---Use to put in generalized world positions--->
+				<joint name="targety1-3" ref="-.5" type="slide" pos="0 0 0" axis="0 1 0" range="-.6 .6"/>
 				<site type='box' size='.02 .02 .02'name='target1-3' pos='0 0 0'/>
 			</body>
 
 			<body name="target1-4" pos="-.05 -.5 .08">
 				<geom type="box" size=".02 .02 .02" rgba="1 1 1 1"/>
+				<joint name="targetx1-4" ref="-.05" type="slide" pos="0 0 0" axis="1 0 0" range="-.5 .5"/><!---Use to put in generalized world positions--->
+				<joint name="targety1-4" ref="-.5" type="slide" pos="0 0 0" axis="0 1 0" range="-.6 .6"/>
 				<site type='box' size='.02 .02 .02'name='target1-4' pos='0 0 0'/>
 			</body>
+
 
 			<!---second column of objects--->
 			<body name="target2-1" pos="-.5 -.17 .08">
 				<geom type="box" size=".02 .02 .02" rgba="0 1 1 1"/>
+				<joint name="targetx2-1" ref="-.4" type="slide" pos="0 0 0" axis="1 0 0" range="-.5 .5"/><!---Use to put in generalized world positions--->
+				<joint name="targety2-1" ref="-.17" type="slide" pos="0 0 0" axis="0 1 0" range="-.6 .6"/>
 				<site type='box' size='.02 .02 .02'name='target2-1' pos='0 0 0'/>
 			</body>
 
 			<body name="target2-2" pos="-.35 -.17 .08">
 				<geom type="box" size=".02 .02 .02" rgba="0 1 1 1"/>
+				<joint name="targetx2-2" ref="-.35" type="slide" pos="0 0 0" axis="1 0 0" range="-.5 .5"/><!---Use to put in generalized world positions--->
+				<joint name="targety2-2" ref="-.17" type="slide" pos="0 0 0" axis="0 1 0" range="-.6 .6"/>
 				<site type='box' size='.02 .02 .02'name='target2-2' pos='0 0 0'/>
 			</body>
 
 			<body name="target2-3" pos="-.2 -.17 .08">
 				<geom type="box" size=".02 .02 .02" rgba="0 1 1 1"/>
+				<joint name="targetx2-3" ref="-.2" type="slide" pos="0 0 0" axis="1 0 0" range="-.5 .5"/><!---Use to put in generalized world positions--->
+				<joint name="targety2-3" ref="-.17" type="slide" pos="0 0 0" axis="0 1 0" range="-.6 .6"/>
 				<site type='box' size='.02 .02 .02'name='target2-3' pos='0 0 0'/>
 			</body>
 
 			<body name="target2-4" pos="-.05 -.17 .08">
 				<geom type="box" size=".02 .02 .02" rgba="0 1 1 1"/>
+				<joint name="targetx2-4" ref="-.05" type="slide" pos="0 0 0" axis="1 0 0" range="-.5 .5"/><!---Use to put in generalized world positions--->
+				<joint name="targety2-4" ref="-.17" type="slide" pos="0 0 0" axis="0 1 0" range="-.6 .6"/>
 				<site type='box' size='.02 .02 .02'name='target2-4' pos='0 0 0'/>
 			</body>
 
@@ -160,42 +177,58 @@ S						</body>
 			<!---third column of objects--->
 			<body name="target3-1" pos="-.5 .17 .08">
 				<geom type="box" size=".02 .02 .02" rgba="1 0 1 1"/>
+				<joint name="targetx3-1" ref="-.4" type="slide" pos="0 0 0" axis="1 0 0" range="-.5 .5"/><!---Use to put in generalized world positions--->
+				<joint name="targety3-1" ref=".17" type="slide" pos="0 0 0" axis="0 1 0" range="-.6 .6"/>
 				<site type='box' size='.02 .02 .02'name='target3-1' pos='0 0 0'/>
 			</body>
 
 			<body name="target3-2" pos="-.35 .17 .08">
 				<geom type="box" size=".02 .02 .02" rgba="1 0 1 1"/>
+				<joint name="targetx3-2" ref="-.35" type="slide" pos="0 0 0" axis="1 0 0" range="-.5 .5"/><!---Use to put in generalized world positions--->
+				<joint name="targety3-2" ref=".17" type="slide" pos="0 0 0" axis="0 1 0" range="-.6 .6"/>
 				<site type='box' size='.02 .02 .02'name='target3-2' pos='0 0 0'/>
 			</body>
 
 			<body name="target3-3" pos="-.2 .17 .08">
 				<geom type="box" size=".02 .02 .02" rgba="1 0 1 1"/>
+				<joint name="targetx3-3" ref="-.2" type="slide" pos="0 0 0" axis="1 0 0" range="-.5 .5"/><!---Use to put in generalized world positions--->
+				<joint name="targety3-3" ref=".17" type="slide" pos="0 0 0" axis="0 1 0" range="-.6 .6"/>
 				<site type='box' size='.02 .02 .02'name='target3-3' pos='0 0 0'/>
 			</body>
 
 			<body name="target3-4" pos="-.05 .17 .08">
 				<geom type="box" size=".02 .02 .02" rgba="1 0 1 1"/>
+				<joint name="targetx3-4" ref="-.05" type="slide" pos="0 0 0" axis="1 0 0" range="-.5 .5"/><!---Use to put in generalized world positions--->
+				<joint name="targety3-4" ref=".17" type="slide" pos="0 0 0" axis="0 1 0" range="-.6 .6"/>
 				<site type='box' size='.02 .02 .02'name='target3-4' pos='0 0 0'/>
 			</body>
 
 			<!---First column of objects--->
 			<body name="target4-1" pos="-.5 .5 .08">
 				<geom type="box" size=".02 .02 .02" rgba="1 1 0 1"/>
+				<joint name="targetx4-1" ref="-.4" type="slide" pos="0 0 0" axis="1 0 0" range="-.5 .5"/><!---Use to put in generalized world positions--->
+				<joint name="targety4-1" ref=".5" type="slide" pos="0 0 0" axis="0 1 0" range="-.6 .6"/>
 				<site type='box' size='.02 .02 .02'name='target4-1' pos='0 0 0'/>
 			</body>
 
 			<body name="target4-2" pos="-.35 .5 .08">
 				<geom type="box" size=".02 .02 .02" rgba="1 1 0 1"/>
+				<joint name="targetx4-2" ref="-.35" type="slide" pos="0 0 0" axis="1 0 0" range="-.5 .5"/><!---Use to put in generalized world positions--->
+				<joint name="targety4-2" ref=".5" type="slide" pos="0 0 0" axis="0 1 0" range="-.6 .6"/>
 				<site type='box' size='.02 .02 .02'name='target4-2' pos='0 0 0'/>
 			</body>
 
 			<body name="target4-3" pos="-.2 .5 .08">
 				<geom type="box" size=".02 .02 .02" rgba="1 1 0 1"/>
+				<joint name="targetx4-3" ref="-.2" type="slide" pos="0 0 0" axis="1 0 0" range="-.5 .5"/><!---Use to put in generalized world positions--->
+				<joint name="targety4-3" ref=".5" type="slide" pos="0 0 0" axis="0 1 0" range="-.6 .6"/>
 				<site type='box' size='.02 .02 .02'name='target4-3' pos='0 0 0'/>
 			</body>
 
 			<body name="target4-4" pos="-.05 .5 .08">
 				<geom type="box" size=".02 .02 .02" rgba="1 1 0 1"/>
+				<joint name="targetx4-4" ref="-.05" type="slide" pos="0 0 0" axis="1 0 0" range="-.5 .5"/><!---Use to put in generalized world positions--->
+				<joint name="targety4-4" ref=".5" type="slide" pos="0 0 0" axis="0 1 0" range="-.6 .6"/>
 				<site type='box' size='.02 .02 .02'name='target4-4' pos='0 0 0'/>
 			</body>
 
@@ -204,7 +237,7 @@ S						</body>
 
     <actuator>
         <motor name='abdomen_y'       gear='200' joint='abdomen_y' />
-        <!---<motor name='abdomen_z'       gear='200' joint='abdomen_z' /> -->
+        <motor name='abdomen_z'       gear='200' joint='abdomen_z' />
         <motor name='right_shoulder1' gear='100' joint='right_shoulder1' />
         <motor name='right_shoulder2' gear='100' joint='right_shoulder2' />
         <motor name='right_elbow'     gear='200' joint='right_elbow' />

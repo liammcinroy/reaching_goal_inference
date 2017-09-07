@@ -16,20 +16,19 @@ function SetSimState(sim::MJSimEnv, xi)
         sim.data.qvel.mat[i] = xi[offset]
         offset += 1
     end
-    for i=1:sim.data.na
-        sim.data.act.mat[i] = xi[offset]
-        offset += 1
+    for i=1:sim.data.nsite
+        sim.data.site_xpos.mat[:, i] = xi[offset:(offset + 2)]
+        offset += 3
     end
 end
 
 function SetSimControls(sim::MJSimEnv, ui)
-    for i=1:sim.data.nu
-        sim.data.ctrl.mat[i] = ui[i]
-    end
+    SetSimControls(sim.controls, ui)
+    SetControls(sim)
 end
 
 function GetSimState(sim::MJSimEnv)
-    xi = Vector{mjtNum}(sim.data.nq + sim.data.nv + sim.data.na)
+    xi = Vector{mjtNum}(sim.data.nq + sim.data.nv + sim.data.nsite * 3)
     offset = 1
     for i=1:sim.data.nq
         xi[offset] = sim.data.qpos[i, 1]
@@ -39,9 +38,9 @@ function GetSimState(sim::MJSimEnv)
         xi[offset] = sim.data.qvel[i, 1]
         offset += 1
     end
-    for i=1:sim.data.na
-        xi[offset] = sim.data.act[i, 1]
-        offset += 1
+    for i=1:sim.data.nsite
+        xi[offset:(offset + 2)] = sim.data.site_xpos.mat[:, i]
+        offset += 3
     end
     return xi
 end
@@ -60,22 +59,25 @@ function mjDynamicsF(xi, ui, i, sim, intermediateCost)
     SetSimControls(sim, ui)
     mj_forward(sim.model, sim.data)
     xnew = GetSimState(sim)
-    cost = intermediateCost(xnew, ui)
+    cost = intermediateCost(xnew, ui, sim)
     return (xnew, cost)
 end
 
-#compute jacobian and hessian along each point in the given trajectory
+#compute jacobian along each point in the given trajectory
 #time invariant, can drop I??
-function mjDynamicsFx(x, u, I, sim, costx, costu, costxx, costuu, costxu)
+function mjDynamicsFx(x, u, I, sim, costx, costu, costxx, costuu)
     #compute derivatives:
+    nx = size(x, 1)
     #fx, fu, fxx, fuu, fxu, cx, cu, cxx, cxu, cuu
-    fx = zeros((sim.data.nq + sim.data.nv + sim.data.na), (sim.data.nq + sim.data.nv + sim.data.na), length(I) + 1)
-    fu = zeros((sim.data.nq + sim.data.nv + sim.data.na), sim.data.nu, length(I) + 1)
-    cx = zeros((sim.data.nq + sim.data.nv + sim.data.na), length(I) + 1)
+    fx = zeros(nx, nx, length(I) + 1)
+    fu = zeros(nx, sim.data.nu, length(I) + 1)
+    cx = zeros(nx, length(I) + 1)
     cu = zeros(sim.data.nu, length(I))
-    cxx = zeros((sim.data.nq + sim.data.nv + sim.data.na), (sim.data.nq + sim.data.nv + sim.data.na))
-    cxu = zeros((sim.data.nq + sim.data.nv + sim.data.na), sim.data.nu)
+    cxx = zeros(nx, nx)
+    cxu = zeros(nx, sim.data.nu)
     cuu = zeros(sim.data.nu, sim.data.nu)
+
+    #fxx = zeros()
 
     #for every point on trajectory
     for t in I
@@ -97,32 +99,32 @@ function mjDynamicsFx(x, u, I, sim, costx, costu, costxx, costuu, costxu)
         #fu
         offset1 = 1
         for nu1=1:sim.data.nu
-            icxx"""
-            $(sim.data.d)->ctrl[$nu1] += 1.0e-4;
+            sim.data.ctrl.mat[1, nu1] += 1.0e-4
 
-            //observe the updated values in sim.data, will compare to defaultSim.data
+            icxx"""
             mju_copy($(sim.data.d)->qacc_warmstart, $(defaultSim.data.d)->qacc_warmstart, $(sim.model.m)->nv);
-            mj_step($(sim.model.m), $(sim.data.d));
             """
+
+            for k in 1:1
+                mj_step(sim.model, sim.data)
+            end
 
             #set column values (observed derivs wrt modified value in the row)
             offset2 = 1
             for nq2=1:sim.data.nq
-                val = Float64(icxx"($(sim.data.d)->qpos[$nq2 - 1] - $(defaultSim.data.d)->qpos[$nq2 - 1]) / 2 / 1.0e-4;")
-                fu[offset2, offset1, t] = val
+                fu[offset2, offset1, t] = (sim.data.qpos[nq2, 1] - defaultSim.data.qpos[nq2, 1]) / 2 / 1.0e-4
                 offset2 += 1
             end
             for nv2=1:sim.data.nv
-                val = Float64(icxx"($(sim.data.d)->qvel[$nv2 - 1] - $(defaultSim.data.d)->qvel[$nv2 - 1]) / 2 / 1.0e-4;")
-                fu[offset2, offset1, t] = val
+                fu[offset2, offset1, t] = (sim.data.qvel[nv2, 1] - defaultSim.data.qvel[nv2, 1]) / 2 / 1.0e-4
                 offset2 += 1
             end
-            for na2=1:sim.data.na
-                val = Float64(icxx"($(sim.data.d)->act[$na2 - 1] - $(defaultSim.data.d)->act[$na2 - 1]) / 2 / 1.0e-4;")
-                fu[offset2, offset1, t] = val
-                offset2 += 1
+            for nsite2=1:sim.data.nsite
+                for j=1:3
+                    fu[offset2, offset1, t] = (sim.data.site_xpos[nsite2, j] - defaultSim.data.site_xpos[nsite2, j]) / 2 / 1.0e-4
+                    offset2 += 1
+                end
             end
-
             icxx"""
             //reset
             mju_copy($(sim.data.d)->qpos, $(defaultSim.data.d)->qpos, $(sim.model.m)->nq);
@@ -130,7 +132,7 @@ function mjDynamicsFx(x, u, I, sim, costx, costu, costxx, costuu, costxu)
             mju_copy($(sim.data.d)->qacc, $(defaultSim.data.d)->qacc, $(sim.model.m)->nv);
             mju_copy($(sim.data.d)->qacc_warmstart, $(defaultSim.data.d)->qacc_warmstart, $(sim.model.m)->nv);
             mju_copy($(sim.data.d)->qfrc_applied, $(defaultSim.data.d)->qfrc_applied, $(sim.model.m)->nv);
-            mju_copy($(sim.data.d)->xfrc_applied, $(defaultSim.data.d)->xfrc_applied, 6*$(sim.model.m)->nbody);
+            mju_copy($(sim.data.d)->xfrc_applied, $(defaultSim.data.d)->xfrc_applied, 6*$(sim.model.m)->nsite);
             mju_copy($(sim.data.d)->ctrl, $(defaultSim.data.d)->ctrl, $(sim.model.m)->nu);
             mj_forward($(sim.model.m), $(sim.data.d));
             """
@@ -140,13 +142,15 @@ function mjDynamicsFx(x, u, I, sim, costx, costu, costxx, costuu, costxu)
         #fx
         offset1 = 1
         for nq1=1:sim.data.nq
-            icxx"""
-            $(sim.data.d)->qpos[$nq1] += 1.0e-4;
+            sim.data.qpos.mat[1, nq1] += 1.0e-4
 
-            //observe the updated values in sim.data, will compare to defaultSim.data
+            icxx"""
             mju_copy($(sim.data.d)->qacc_warmstart, $(defaultSim.data.d)->qacc_warmstart, $(sim.model.m)->nv);
-            mj_step($(sim.model.m), $(sim.data.d));
             """
+
+            for k in 1:1
+                mj_step(sim.model, sim.data)
+            end
 
             #set column values (observed derivs wrt modified value in the row)
             offset2 = 1
@@ -158,9 +162,11 @@ function mjDynamicsFx(x, u, I, sim, costx, costu, costxx, costuu, costxu)
                 fx[offset2, offset1, t] = (sim.data.qvel[nv2, 1] - defaultSim.data.qvel[nv2, 1]) / 2 / 1.0e-4
                 offset2 += 1
             end
-            for na2=1:sim.data.na
-                fx[offset2, offset1, t] = (sim.data.act[na2, 1] - defaultSim.data.act[na2, 1]) / 2 / 1.0e-4
-                offset2 += 1
+            for nsite2=1:sim.data.nsite
+                for j=1:3
+                    fx[offset2, offset1, t] = (sim.data.site_xpos[nsite2, j] - defaultSim.data.site_xpos[nsite2, j]) / 2 / 1.0e-4
+                    offset2 += 1
+                end
             end
 
             icxx"""
@@ -170,20 +176,22 @@ function mjDynamicsFx(x, u, I, sim, costx, costu, costxx, costuu, costxu)
             mju_copy($(sim.data.d)->qacc, $(defaultSim.data.d)->qacc, $(sim.model.m)->nv);
             mju_copy($(sim.data.d)->qacc_warmstart, $(defaultSim.data.d)->qacc_warmstart, $(sim.model.m)->nv);
             mju_copy($(sim.data.d)->qfrc_applied, $(defaultSim.data.d)->qfrc_applied, $(sim.model.m)->nv);
-            mju_copy($(sim.data.d)->xfrc_applied, $(defaultSim.data.d)->xfrc_applied, 6*$(sim.model.m)->nbody);
+            mju_copy($(sim.data.d)->xfrc_applied, $(defaultSim.data.d)->xfrc_applied, 6*$(sim.model.m)->nsite);
             mju_copy($(sim.data.d)->ctrl, $(defaultSim.data.d)->ctrl, $(sim.model.m)->nu);
             mj_forward($(sim.model.m), $(sim.data.d));
             """
             offset1 += 1
         end
         for nv1=1:sim.data.nv
-            icxx"""
-            $(sim.data.d)->qvel[$nv1] += 1.0e-4;
+            sim.data.qvel.mat[1, nv1] += 1.0e-4
 
-            //observe the updated values in sim.data, will compare to defaultSim.data
+            icxx"""
             mju_copy($(sim.data.d)->qacc_warmstart, $(defaultSim.data.d)->qacc_warmstart, $(sim.model.m)->nv);
-            mj_step($(sim.model.m), $(sim.data.d));
             """
+
+            for k in 1:1
+                mj_step(sim.model, sim.data)
+            end
 
             #set column values (observed derivs wrt modified value in the row)
             offset2 = 1
@@ -195,9 +203,11 @@ function mjDynamicsFx(x, u, I, sim, costx, costu, costxx, costuu, costxu)
                 fx[offset2, offset1, t] = (sim.data.qvel[nv2, 1] - defaultSim.data.qvel[nv2, 1]) / 2 / 1.0e-4
                 offset2 += 1
             end
-            for na2=1:sim.data.na
-                fx[offset2, offset1, t] = (sim.data.act[na2, 1] - defaultSim.data.act[na2, 1]) / 2 / 1.0e-4
-                offset2 += 1
+            for nsite2=1:sim.data.nsite
+                for j=1:3
+                    fx[offset2, offset1, t] = (sim.data.site_xpos[nsite2, j] - defaultSim.data.site_xpos[nsite2, j]) / 2 / 1.0e-4
+                    offset2 += 1
+                end
             end
 
             icxx"""
@@ -207,34 +217,41 @@ function mjDynamicsFx(x, u, I, sim, costx, costu, costxx, costuu, costxu)
             mju_copy($(sim.data.d)->qacc, $(defaultSim.data.d)->qacc, $(sim.model.m)->nv);
             mju_copy($(sim.data.d)->qacc_warmstart, $(defaultSim.data.d)->qacc_warmstart, $(sim.model.m)->nv);
             mju_copy($(sim.data.d)->qfrc_applied, $(defaultSim.data.d)->qfrc_applied, $(sim.model.m)->nv);
-            mju_copy($(sim.data.d)->xfrc_applied, $(defaultSim.data.d)->xfrc_applied, 6*$(sim.model.m)->nbody);
+            mju_copy($(sim.data.d)->xfrc_applied, $(defaultSim.data.d)->xfrc_applied, 6*$(sim.model.m)->nsite);
             mju_copy($(sim.data.d)->ctrl, $(defaultSim.data.d)->ctrl, $(sim.model.m)->nu);
             mj_forward($(sim.model.m), $(sim.data.d));
             """
             offset1 += 1
         end
-        for na1=1:sim.data.na
-            icxx"""
-            $(sim.data.d)->act[$na1] += 1.0e-4;
+        for nsite1=1:sim.data.nsite#don't do, doesn't make sense
+            for j1=1:3
 
-            //observe the updated values in sim.data, will compare to defaultSim.data
-            mju_copy($(sim.data.d)->qacc_warmstart, $(defaultSim.data.d)->qacc_warmstart, $(sim.model.m)->nv);
-            mj_step($(sim.model.m), $(sim.data.d));
-            """
+                sim.data.site_xpos.mat[j1, nsite1] += 1.0e-4
 
-            #set column values (observed derivs wrt modified value in the row)
-            offset2 = 1
-            for nq2=1:sim.data.nq
-                fx[offset2, offset1, t] = (sim.data.qpos[nq2, 1] - defaultSim.data.qpos[nq2, 1]) / 2 / 1.0e-4
-                offset2 += 1
-            end
-            for nv2=1:sim.data.nv
-                fx[offset2, offset1, t] = (sim.data.qvel[nv2, 1] - defaultSim.data.qvel[nv2, 1]) / 2 / 1.0e-4
-                offset2 += 1
-            end
-            for na2=1:sim.data.na
-                fx[offset2, offset1, t] = (sim.data.act[na2, 1] - defaultSim.data.act[na2, 1]) / 2 / 1.0e-4
-                offset2 += 1
+                icxx"""
+                mju_copy($(sim.data.d)->qacc_warmstart, $(defaultSim.data.d)->qacc_warmstart, $(sim.model.m)->nv);
+                """
+
+                for k in 1:1
+                    mj_step(sim.model, sim.data)
+                end
+
+                #set column values (observed derivs wrt modified value in the row)
+                offset2 = 1
+                for nq2=1:sim.data.nq
+                    fx[offset2, offset1, t] = (sim.data.qpos[nq2, 1] - defaultSim.data.qpos[nq2, 1]) / 2 / 1.0e-4
+                    offset2 += 1
+                end
+                for nv2=1:sim.data.nv
+                    fx[offset2, offset1, t] = (sim.data.qvel[nv2, 1] - defaultSim.data.qvel[nv2, 1]) / 2 / 1.0e-4
+                    offset2 += 1
+                end
+                for nsite2=1:sim.data.nsite
+                    for j=1:3
+                        fx[offset2, offset1, t] = (sim.data.site_xpos[nsite2, j] - defaultSim.data.site_xpos[nsite2, j]) / 2 / 1.0e-4
+                        offset2 += 1
+                    end
+                end
             end
 
             icxx"""
@@ -244,28 +261,21 @@ function mjDynamicsFx(x, u, I, sim, costx, costu, costxx, costuu, costxu)
             mju_copy($(sim.data.d)->qacc, $(defaultSim.data.d)->qacc, $(sim.model.m)->nv);
             mju_copy($(sim.data.d)->qacc_warmstart, $(defaultSim.data.d)->qacc_warmstart, $(sim.model.m)->nv);
             mju_copy($(sim.data.d)->qfrc_applied, $(defaultSim.data.d)->qfrc_applied, $(sim.model.m)->nv);
-            mju_copy($(sim.data.d)->xfrc_applied, $(defaultSim.data.d)->xfrc_applied, 6*$(sim.model.m)->nbody);
+            mju_copy($(sim.data.d)->xfrc_applied, $(defaultSim.data.d)->xfrc_applied, 6*$(sim.model.m)->nsite);
             mju_copy($(sim.data.d)->ctrl, $(defaultSim.data.d)->ctrl, $(sim.model.m)->nu);
             mj_forward($(sim.model.m), $(sim.data.d));
             """
             offset1 += 1
         end
 
-        ###COST FUNCTION DERIVATIVES - quadratic simple intermediate costs ergo simple to calculate
-        cx[:, t] = zeros((sim.data.nq + sim.data.nv + sim.data.na))
-
+        ###COST FUNCTION DERIVATIVES
+        cu[:, t] = costu(u[:, t], sim)
+        cx[:, t] = costx(x[:, t], sim)
     end
 
-    for t in I
-        if t < length(I)
-            cu[:, t] = costu(u[:, t])
-        end
-        #cx[:, t] = costx(x[:, t])
-    end
-
-    cuu = costuu(u)
-    cxx = costxx(x)
-    cxu = costxu(x, u)
+    cuu = costuu(u, sim)
+    cxx = costxx(x, sim)
+    cxu = cx * transpose(hcat(cu, ones(sim.data.nu)))
 
     #assume linear?
     fxx = fxu = fuu = []
@@ -275,5 +285,5 @@ end
 
 #get cost of being in a state
 function mjDynamicsFT(xi, sim, finalCost)
-    return finalCost(xi)
+    return finalCost(xi, sim)
 end

@@ -1,0 +1,9 @@
+Fri Jul 28 19:14:42 2017
+WARNING: Pre-allocated contact buffer is full. Increase nconmax above 100. Time = 0.0180.
+
+Fri Jul 28 19:15:51 2017
+WARNING: Pre-allocated contact buffer is full. Increase nconmax above 100. Time = 0.0840.
+
+Fri Jul 28 19:39:38 2017
+WARNING: Nan, Inf or huge value in QACC at DOF 1. The simulation is unstable. Time = 0.0580.
+

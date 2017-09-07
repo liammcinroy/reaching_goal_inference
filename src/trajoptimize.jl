@@ -3,6 +3,72 @@ using MuJoCo
 
 include("simenvi.jl")
 
+function invstep(sim::MJSimEnv, x_prev, x_curr, x_next)
+
+    # separate out x`
+    q_prev = x_prev[...,:sim.data.nq]
+    q_curr = x_curr[...,:sim.data.nq]
+    q_next = x_next[...,:sim.data.nq]
+
+    # compute time derivatives
+    qpos = q_curr
+    qvel = (q_next - q_curr) / sim.dt
+    qacc = (q_prev - 2.0 * q_curr + q_next) / (sim.dt * sim.dt)
+
+    assert qpos.shape[-1] == sim.model.nq
+    assert qvel.shape[-1] == sim.model.nv
+    assert qacc.shape[-1] == sim.model.nv
+    assert qpos.shape[:-1] == qvel.shape[:-1] and qvel.shape[:-1] == qacc.shape[:-1], \
+        'All inputs must have the same batch size, but:\nQPOS=%s\nQVEL=%s\nU=%s' \
+        % (qpos.shape[:-1], qvel.shape[:-1], qacc.shape[:-1])
+    batch_shape = list(qpos.shape[:-1])
+
+    state = np.empty(batch_shape, dtype=sim.dtype)
+
+    for flat_i in range(np.prod(batch_shape)):
+        i = np.unravel_index(flat_i, batch_shape)
+        sim.model.data.qpos = qpos[i]
+        sim.model.data.qvel = qvel[i]
+        sim.model.data.qacc = qacc[i]
+
+        # perform inverse dynamics step
+        #mjlib.mj_inverse(sim.model.ptr, sim.model.data.ptr)
+        # recreate mj_inverse:
+        mjlib.mj_invPosition(sim.model.ptr, sim.model.data.ptr)
+        mjlib.mj_invVelocity(sim.model.ptr, sim.model.data.ptr)
+        #mjlib.mj_invConstraint(sim.model.ptr, sim.model.data.ptr)
+        qfrc_inverse = sim.model.data.qfrc_inverse
+        mjlib.mj_rne(sim.model.ptr, sim.model.data.ptr, 1, qfrc_inverse.ctypes.data_as(ctypes.POINTER(ctypes.c_double)))
+        # # override forces
+        # efc_force = sim.model.data.efc_force
+        # qfrc_constraint = sim.model.data.qfrc_constraint
+        # mjlib.mj_mulJacTVec(sim.model.ptr, sim.model.data.ptr, \
+        #     qfrc_constraint.ctypes.data_as(ctypes.POINTER(ctypes.c_double)), \
+        #     efc_force.ctypes.data_as(ctypes.POINTER(ctypes.c_double)))
+        # sim.model.data.qfrc_constraint = qfrc_constraint
+
+        sim.model.data.qfrc_inverse = qfrc_inverse \
+            + sim.model.dof_armature * sim.model.data.qacc \
+            - sim.model.data.qfrc_passive# - sim.model.data.qfrc_constraint
+
+        # record results
+        for result_field, source_field, source_idx in sim.fields:
+            val = getattr(sim.model.data, source_field)
+            if source_idx is not None: val = val[source_idx]
+            state[result_field][i] = val.flatten()
+
+    # convert the numpy structured array type back into a dict so it has .items() etc.
+    # this is fine since it just creates views and does not copy.
+    state_dict = {k: state[k] for k in state.dtype.names}
+    # add custom fields to dictionary
+    state_dict["frc_root"] = state_dict["qfrc_inverse"][...,sim.unactuated_dofs()]
+    state_dict["frc_actuator"] = state_dict["qfrc_inverse"][...,sim.actuated_dofs()]
+    # penetration
+    state_dict["efc_penetration"] = -np.minimum(state_dict["efc_pos"],0.0)
+
+    return state_dict
+end
+
 function dynamics_linearization(inverse_dynamics, x_means, eps)
     f_x = []
     for i=1:length(x_means)
@@ -145,5 +211,4 @@ function direct_trajectory_optimization(qpos_init, qvel_init, T, sim::MJSimEnv, 
     end
 
     return f
-
 end
